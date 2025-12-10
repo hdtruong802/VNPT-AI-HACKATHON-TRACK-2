@@ -1,26 +1,29 @@
-# Load test.json -> run pipeline -> ghi pred.csv
+# Load test.json -> xử lý batch -> ghi kết quả realtime CSV
+from utils.io import load_json
+from router_agent import Router
+import csv, os
 
-from src.utils.io import load_questions, write_csv
-from src.router_agent import RouterAgent
-from src.answer_selector_agent import AnswerSelectorAgent
+OUTPUT = "../output/class_1.csv"
 
 def run():
-    questions = load_questions("data/val.json")
-    router = RouterAgent()
-    selector = AnswerSelectorAgent()
-    results = []
+    data = load_json("../data/val.json")
+    router = Router()
 
-    for q in questions:
-        agent = router.route(q["question"])   # → KNOWLEDGE / MATH / READING / SENSITIVE
-        answer = agent.solve(q)               # agent reasoning và trả lại index hoặc None
-        final_ans = selector.select(answer)   # Convert 0→A,1→B,2→C,3→D
+    if not os.path.exists(OUTPUT):
+        with open(OUTPUT, "w", encoding="utf-8") as f:
+            f.write("qid,label\n")
 
-        results.append({
-            "qid": q["qid"],
-            "answer": final_ans                # Nếu sensitive → final_ans = ""
-        })
+    # mở file append mode
+    with open(OUTPUT, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
 
-    write_csv("output/pred.csv", results)
+        total = len(data)
+        for idx, item in enumerate(data, 1):
+            label = router.classify_single(item)
+            writer.writerow([item["qid"], label])
+            print(f"✔ {idx}/{total} → qid: {item['qid']} | label: {label}")
 
-if __name__ == "__main__":
+    print("FINISHED → file:", OUTPUT)
+
+if __name__=="__main__":
     run()
