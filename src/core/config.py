@@ -5,8 +5,12 @@ load_dotenv()
 
 class Config:
     VNPT_API_KEY = os.getenv("VNPT_API_KEY")
-    VNPT_TOKEN_ID = os.getenv("VNPT_TOKEN_ID")
-    VNPT_TOKEN_KEY = os.getenv("VNPT_TOKEN_KEY")
+    VNPT_TOKEN_ID_SMALL = os.getenv("VNPT_TOKEN_ID_SMALL")
+    VNPT_TOKEN_KEY_SMALL = os.getenv("VNPT_TOKEN_KEY_SMALL")
+    VNPT_TOKEN_ID_LARGE = os.getenv("VNPT_TOKEN_ID_LARGE")
+    VNPT_TOKEN_KEY_LARGE = os.getenv("VNPT_TOKEN_KEY_LARGE")
+    VNPT_TOKEN_ID_EMBEDDING = os.getenv("VNPT_TOKEN_ID_EMBEDDING")
+    VNPT_TOKEN_KEY_EMBEDDING = os.getenv("VNPT_TOKEN_KEY_EMBEDDING")
     QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
     QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
     
