@@ -27,7 +27,7 @@ class VNPTClient:
         }
 
     def chat_completion(self, messages: List[Dict[str, str]], model: str = Config.MODEL_SMALL, 
-                        temperature: float = 1.0, top_p: float = 1.0, top_k: int = 20, 
+                        temperature: float = 0.2, top_p: float = 0.9, top_k: int = 20, 
                         max_tokens: int = 512) -> Optional[str]:
         
         # URL uses hyphens, Payload uses underscores
