@@ -2,15 +2,43 @@ import asyncio
 import json
 import pandas as pd
 import os
+import re
 from google.adk import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai.types import Content, Part
 from src.agents.router_agent import RouterAgent
 
+def format_choices(choices):
+    """Formats a list of choices into A. ... B. ... format."""
+    formatted = ""
+    for i, choice in enumerate(choices):
+        letter = chr(65 + i)  # 65 is ASCII for 'A'
+        formatted += f"{letter}. {choice}\n"
+    return formatted
+
+def extract_answer(text):
+    """Extracts the selected answer letter (A, B, C, D...) from the text."""
+    # Priority 1: Look for "Answer: X" or "Đáp án: X"
+    # match = re.search(r"(?:Answer|Đáp án)[:\s\-\*]+([A-J])", text, re.IGNORECASE)
+    # if match:
+    #     return match.group(1).upper()
+        
+    # Priority 2: Look for "X. " at the start of the text
+    match = re.search(r"^([A-J])[\.\)\:]\s", text, re.IGNORECASE)
+    if match:
+        return match.group(1).upper()
+        
+    # # Priority 3: Look for "**X**" or similar isolated patterns if strictly asked
+    # match = re.search(r"(?:^|\s)\*\*([A-J])\*\*(?:$|\s|\.)", text, re.IGNORECASE)
+    # if match:
+    #     return match.group(1).upper()
+
+    return None
+
 async def get_agent_response(agent, question, session_id, user_id="user"):
     session_service = InMemorySessionService()
-    runner = Runner(agent=agent, session_service=session_service, app_name="pipeline")
-    await session_service.create_session(session_id=session_id, user_id=user_id, app_name="pipeline")
+    runner = Runner(agent=agent, session_service=session_service, app_name="agents")
+    await session_service.create_session(session_id=session_id, user_id=user_id, app_name="agents")
     
     content = Content(parts=[Part(text=question)], role="user")
     response_text = ""
@@ -38,8 +66,8 @@ async def main():
         print(f"File {input_file} not found. Creating dummy data for testing.")
         # Create dummy data if not exists (or use sample.json if user prefers)
         dummy_data = [
-            {"qid": "test_001", "question": "Thủ đô của Việt Nam là gì?", "choices": []},
-            {"qid": "test_002", "question": "Tính tổng 1 + 1", "choices": []}
+            {"qid": "test_001", "question": "Thủ đô của Việt Nam là gì?", "choices": ["Hà Nội", "HCM", "Đà Nẵng", "Huế"]},
+            {"qid": "test_002", "question": "Tính tổng 1 + 1", "choices": ["1", "2", "3", "4"]}
         ]
         with open(input_file, "w") as f:
             json.dump(dummy_data, f, ensure_ascii=False, indent=2)
@@ -60,26 +88,37 @@ async def main():
         question = item.get('question', '')
         choices = item.get('choices', [])
         
+        full_question = question
         if choices:
-            question += f"\nChoices: {choices}"
+            formatted_choices = format_choices(choices)
+            full_question += f"\n\nChoices:\n{formatted_choices}\n\nIMPORTANT: Start your answer with the selected letter (e.g., 'A.')."
 
         print(f"Processing {qid}...")
         
         try:
             # Run Router Agent
-            answer = await get_agent_response(router_agent, question, f"session_router_{qid}")
+            raw_answer = await get_agent_response(router_agent, full_question, f"session_router_{qid}")
             
-            print(f"  Answer: {answer[:100]}...")
+            print(f"  Raw Answer: {raw_answer[:100]}...")
+            
+            final_answer = raw_answer
+            if choices:
+                extracted = extract_answer(raw_answer)
+                if extracted:
+                    final_answer = extracted
+                    print(f"  Extracted Answer: {final_answer}")
+                else:
+                    print(f"  Could not extract answer from: {raw_answer[:50]}...")
             
             results.append({
                 "qid": qid,
-                "answer": answer
+                "answer": final_answer
             })
         except Exception as e:
             print(f"Error processing {qid}: {e}")
             results.append({
                 "qid": qid,
-                "answer": "Error"
+                "answer": "C" # Default to C if extraction fails
             })
         
     # Save results
