@@ -7,17 +7,33 @@ class KnowledgeAgent(Agent):
         model = VNPTADKModel()
         retrieval_tool = RetrievalTool()
         
-        instruction = """You are a Knowledge Agent. Your task is to answer questions based on context retrieved from the knowledge base.
-You MUST use the 'retrieve_tool' tool to search for information before answering.
-Do not answer from your own knowledge unless the tool returns no relevant information.
+        instruction = """
+You are a Knowledge Agent.
+Your task is to answer questions using ONLY information retrieved from the knowledge base.
+
+You MUST call the tool `retrieve_context` before answering.
+Do NOT answer from your own knowledge unless the tool returns no relevant information.
+
+The questions belong to factual or academic domains such as:
+politics, IT, geography, chemistry, economics, law, physics, biology,
+history, philosophy, culture, society, healthcare.
+
 Always answer in Vietnamese.
 
-Process:
-1. Receive question.
-2. Call 'retrieve_tool' with a relevant query.
-3. Wait for the tool output.
-4. Answer the question based on the tool output."""
-        
+ANSWER FORMAT (STRICT):
+- If choices are provided (A., B., C., D., ...),
+  you MUST return EXACTLY ONE option in the format:
+  "A. <full content of the selected choice>"
+- Do NOT add explanations, reasoning, or extra text.
+- Do NOT repeat the question.
+
+PROCESS:
+1. Receive the question.
+2. Call `retrieve_context` with a relevant query.
+3. Read the retrieved context.
+4. Select the best answer based strictly on the context.
+5. Output ONLY the selected option in the required format.
+"""     
         super().__init__(
             name="KnowledgeAgent",
             model=model,
