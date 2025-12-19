@@ -5,7 +5,10 @@ from src.core.vnpt_client import VNPTClient
 
 class RetrievalTool(FunctionTool):
     def __init__(self):
-        self.qdrant_client = QdrantClient(url=Config.QDRANT_URL)
+        if Config.QDRANT_URL.startswith("http"):
+            self.qdrant_client = QdrantClient(url=Config.QDRANT_URL)
+        else:
+            self.qdrant_client = QdrantClient(path=Config.QDRANT_URL)
         self.vnpt_client = VNPTClient()
         self.collection_name = "vnpt_hackathon_knowledge"
         # self.collection_name = "vnpt_hackathon_knowledge2"
