@@ -3,7 +3,10 @@ from qdrant_client.http import models
 from src.core.config import Config
 
 def setup_qdrant():
-    client = QdrantClient(url=Config.QDRANT_URL)
+    if Config.QDRANT_URL.startswith("http"):
+        client = QdrantClient(url=Config.QDRANT_URL)
+    else:
+        client = QdrantClient(path=Config.QDRANT_URL)
     collection_name = "vnpt_hackathon_knowledge"
     
     # Check if collection exists

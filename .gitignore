@@ -1,0 +1,9 @@
+.env
+api-keys.json
+# data/
+# Tài liệu mô tả APIs LLM_Embedding Track 2.pdf
+Tài liệu mô tả phương thức nộp bài Track 2 The Builder.pdf
+__pycache__/
+*.pyc
+*.pyo
+qdrant_data
