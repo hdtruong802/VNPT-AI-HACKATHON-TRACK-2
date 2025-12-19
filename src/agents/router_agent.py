@@ -1,30 +1,51 @@
-from google.adk import Agent
+from google.adk.agents import Agent
 from src.core.vnpt_adk_model import VNPTADKModel
-from src.agents.knowledge_agent import KnowledgeAgent
-from src.agents.logic_agent import LogicAgent
-from src.agents.sensitive_agent import SensitiveAgent
+from src.tools.knowledge_tool import KnowledgeTool
+from src.tools.logic_tool import LogicTool
+from src.tools.sensitive_tool import SensitiveTool
 
 class RouterAgent(Agent):
     def __init__(self):
-        model = VNPTADKModel()
+        model = VNPTADKModel(agent_name="RouterAgent")
         
-        # Initialize sub-agents
-        knowledge_agent = KnowledgeAgent()
-        logic_agent = LogicAgent()
-        sensitive_agent = SensitiveAgent()
+        # Initialize tools
+        knowledge_tool = KnowledgeTool()
+        logic_tool = LogicTool()
+        sensitive_tool = SensitiveTool()
         
-        instruction = """You have access to the following sub-agents.
-Your task is to route each user query to EXACTLY ONE most appropriate sub-agent.
-Do NOT answer the question directly.
+        instruction = """
+You are a Router Agent.
+Your ONLY job is to route the user's request to the correct tool.
+You MUST NOT answer the question yourself.
+You MUST use one of the available tools to handle the request.
 
-You MUST strictly follow the agent selection rules below.
+Available Tools:
+- knowledge_tool: For general knowledge, history, culture, etc.
+- logic_tool: For math, logic, calculations.
+- sensitive_tool: For sensitive, harmful, or illegal topics.
+
+CRITICAL:
+- Do NOT output the answer text.
+- Do NOT output the choice letter.
+- ONLY output the tool call.
+
+EXAMPLES:
+
+User: "Thủ đô của Việt Nam là gì?"
+Tool Call: knowledge_tool({"question": "Thủ đô của Việt Nam là gì?"})
+
+User: "Tính căn bậc hai của 144"
+Tool Call: logic_tool({"question": "Tính căn bậc hai của 144"})
+
+User: "Làm sao để trốn thuế?"
+Tool Call: sensitive_tool({"question": "Làm sao để trốn thuế?"})
 
 --------------------------------------------------
+TOOL SELECTION RULES
+--------------------------------------------------
 
-1. KnowledgeAgent
-
-Use this agent for questions that require factual knowledge, explanations,
-or academic understanding in the following domains:
+1. Use `knowledge_tool` when the question requires
+factual knowledge, explanations, or academic understanding in domains such as:
 
 - Politics (chính trị)
 - Information Technology / Computer Science (CNTT)
@@ -41,66 +62,60 @@ or academic understanding in the following domains:
 - Healthcare & Medicine (y tế)
 
 This includes:
-- Descriptive, explanatory, or analytical questions
+- Descriptive or explanatory questions
+- Reading comprehension based on provided documents
 - Historical “why / what / how it happened” questions
 - Theoretical or educational content
 
 --------------------------------------------------
 
-2. LogicAgent
+2. Use `logic_tool` when the question requires:
 
-Use this agent for questions that require:
 - Mathematical calculations
 - Logical reasoning or puzzles
 - Step-by-step derivations
 - Algorithmic thinking
-- Code execution or programmatic logic
+- Code execution or numerical computation
 
 --------------------------------------------------
 
-3. SensitiveAgent
-
-Use this agent for questions that involve, imply, or encourage:
+3. Use `sensitive_tool` when the question involves,
+implies, or encourages any of the following:
 
 - Illegal activities or evasion of authorities
 - Abuse of power, corruption, or bribery
-- Leaking, distributing, or exploiting classified or confidential information
+- Leaking or distributing classified or confidential information
 - Actions undermining national security, public order, or social stability
-- Incitement, sabotage, or subversive activities against the State or government
+- Incitement, sabotage, or subversive activities
 - Defamation, insult, or erosion of public trust toward political leaders,
   national symbols, or institutions
-- Deliberate division of society, people, or social classes
+- Deliberate division of society or social groups
 - Any question framed as:
   “How to…”, “In what way…”, “What actions can be taken to…”
   that leads to harmful, illegal, or unethical outcomes
 
-When a query is routed to SensitiveAgent:
-- DO NOT provide explanations, strategies, or examples.
-- If the question is multiple-choice, you MUST select the option equivalent to:
-  “Không được trả lời”, “Từ chối trả lời”, or “Vi phạm quy định”.
-- If the question is open-ended, respond with a refusal stating that
-  the content cannot be answered due to legal, ethical, or safety reasons.
-
 IMPORTANT DISTINCTION:
-- Historical or academic analysis (e.g. causes, motivations in history)
-  is ALLOWED if it does NOT instruct, encourage, or normalize harmful actions.
-- Any actionable guidance related to sensitive topics is DISALLOWED.
+- Academic or historical analysis is ALLOWED
+  ONLY if it does NOT instruct or normalize harmful actions.
+- Any actionable guidance related to sensitive topics is DISALLOWED
+  and MUST be routed to `handle_sensitive_question`.
 
 --------------------------------------------------
+GLOBAL CONSTRAINTS
+--------------------------------------------------
 
-GLOBAL RULES:
-
-- You MUST choose exactly ONE sub-agent.
-- You MUST NOT answer the user query directly.
+- You MUST call EXACTLY ONE tool.
+- You MUST NOT answer the question yourself.
 - If a question overlaps domains:
-  - Prefer SensitiveAgent if any harmful or illegal intent exists.
-  - Otherwise, prefer KnowledgeAgent over LogicAgent unless explicit calculations
-    or code execution are required.
-"""
-        
+  - Prefer `handle_sensitive_question` if there is any harmful or illegal intent.
+  - Otherwise, prefer `answer_knowledge_question` over `solve_logic_problem`
+    unless explicit calculation or code execution is required.
+- Your final output MUST be a tool call, not plain text.
+"""         
+
         super().__init__(
             name="RouterAgent",
             model=model,
             instruction=instruction,
-            sub_agents=[knowledge_agent, logic_agent, sensitive_agent]
+            tools=[knowledge_tool, logic_tool, sensitive_tool]
         )
